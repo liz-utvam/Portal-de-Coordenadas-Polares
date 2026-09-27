@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal de Coordenadas Polares y Curvas en R²</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0F1B2D; --bg2:#0C1524; --surface:#16233A; --surface2:#1C2C46;
+  --line:#2A3B57; --text:#EDEFF2; --muted:#93A5BC;
+  --gold:#E8A33D; --teal:#5EC9C0; --rose:#D9707A;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;line-height:1.55;}
+h1,h2,h3{font-family:'Lora',serif;font-weight:600;margin:0 0 .4em;}
+h2{font-size:1.9rem;color:#fff;}
+h3{font-size:1.2rem;color:var(--gold);}
+p{color:var(--muted);max-width:62ch;}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+nav{position:sticky;top:0;z-index:50;background:rgba(12,21,36,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);}
+nav .wrap{display:flex;align-items:center;gap:18px;padding:14px 24px;overflow-x:auto;}
+nav .brand{font-family:'Lora',serif;font-size:1.05rem;white-space:nowrap;}
+nav a{color:var(--muted);text-decoration:none;font-size:.92rem;white-space:nowrap;padding:5px 10px;border-radius:20px;border:1px solid transparent;}
+nav a:hover,nav a.active{color:var(--text);border-color:var(--line);background:var(--surface);}
+nav a .deg{color:var(--gold);font-size:.78rem;margin-right:5px;}
+header.hero{padding:64px 0 40px;border-bottom:1px solid var(--line);background:
+  radial-gradient(600px 400px at 80% -10%, rgba(94,201,192,.10), transparent 60%),
+  radial-gradient(500px 350px at -5% 20%, rgba(232,163,61,.10), transparent 60%);}
+.hero-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:40px;align-items:center;}
+@media(max-width:860px){.hero-grid{grid-template-columns:1fr;}}
+.eyebrow{color:var(--teal);font-size:.85rem;letter-spacing:.02em;}
+.hero h1{font-size:2.5rem;line-height:1.15;margin-top:8px;}
+.hero h1 em{font-style:italic;color:var(--gold);}
+.readout{display:flex;gap:14px;margin-top:18px;flex-wrap:wrap;}
+.readout div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-family:'Lora',serif;}
+.readout span{display:block;color:var(--muted);font-family:'Inter',sans-serif;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;}
+canvas{width:100%;height:auto;background:var(--bg2);border:1px solid var(--line);border-radius:12px;display:block;touch-action:none;}
+section{padding:56px 0;border-bottom:1px solid var(--line);}
+.tag{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:.85rem;margin-bottom:10px;}
+.tag b{color:var(--gold);font-family:'Lora',serif;}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+@media(max-width:860px){.grid2{grid-template-columns:1fr;}}
+.formula{font-family:'Lora',serif;font-style:italic;background:var(--surface2);border-left:3px solid var(--teal);padding:10px 16px;border-radius:6px;margin:10px 0;color:#fff;}
+label{display:block;font-size:.82rem;color:var(--muted);margin:12px 0 4px;display:flex;justify-content:space-between;}
+label b{color:var(--text);font-family:'Lora',serif;}
+input[type=range]{width:100%;accent-color:var(--gold);}
+input[type=number],select{background:var(--surface2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-family:'Inter',sans-serif;width:100%;}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
+button{background:var(--surface2);border:1px solid var(--line);color:var(--text);padding:8px 14px;border-radius:20px;font-size:.85rem;cursor:pointer;}
+button.active,button:hover{border-color:var(--gold);color:var(--gold);}
+.note{font-size:.85rem;color:var(--muted);border-top:1px dashed var(--line);margin-top:14px;padding-top:10px;}
+.legend{display:flex;gap:16px;font-size:.8rem;color:var(--muted);margin-top:8px;}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;}
+footer{padding:30px 0;text-align:center;color:var(--muted);font-size:.85rem;}
+.result{font-family:'Lora',serif;color:var(--gold);font-size:1.1rem;margin-top:10px;}
+.tbl{width:100%;border-collapse:collapse;font-family:'Lora',serif;font-size:.9rem;margin-top:10px;}
+.tbl td,.tbl th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:center;color:var(--text);}
+.tbl th{color:var(--muted);font-family:'Inter',sans-serif;font-weight:500;font-size:.75rem;}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <span class="brand">Coordenadas Polares</span>
+  <a href="#fundamentos"><span class="deg">0°</span>Fundamentos</a>
+  <a href="#conversion"><span class="deg">90°</span>Conversión</a>
+  <a href="#laboratorio"><span class="deg">180°</span>Laboratorio</a>
+  <a href="#limites"><span class="deg">270°</span>Límites</a>
+  <a href="#referencias"><span class="deg">360°</span>Referencias</a>
+</div></nav>
+
+<header class="hero"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">Portal interactivo · Cálculo multivariable</div>
+    <h1>El plano visto desde <em>un giro y una distancia</em></h1>
+    <p>Arrastra el punto sobre la rejilla polar: cada posición es un par (r, θ) — una distancia al polo y un ángulo respecto al eje polar — y a la vez un punto cartesiano (x, y).</p>
+    <div class="readout">
+      <div><span>Polar</span>r = <b id="ro">–</b>, θ = <b id="to">–</b></div>
+      <div><span>Cartesiano</span>x = <b id="xo">–</b>, y = <b id="yo">–</b></div>
+    </div>
+  </div>
+  <canvas id="heroCanvas" width="480" height="420"></canvas>
+</div></header>
+
+<section id="fundamentos"><div class="wrap">
+  <div class="tag"><b>0°</b> Sección 1</div>
+  <h2>Fundamentos del sistema polar</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>El polo y el eje polar</h3>
+      <p>El <b style="color:#fff">polo</b> es el punto fijo de referencia (equivalente al origen cartesiano). El <b style="color:#fff">eje polar</b> es el rayo horizontal que sale del polo hacia la derecha (equivalente al semieje x positivo). Todo ángulo θ se mide a partir de ese rayo.</p>
+      <p>Un punto se localiza como <b style="color:#fff">(r, θ)</b>: r es la distancia al polo; θ es el ángulo, medido en sentido antihorario como positivo.</p>
+    </div>
+    <div class="card">
+      <h3>Radios y ángulos negativos</h3>
+      <p>Elige signo de r y de θ para el mismo par (2, 45°) y observa cómo cambia el punto resultante.</p>
+      <div class="btnrow">
+        <button data-r="1" class="rbtn active">r &gt; 0</button>
+        <button data-r="-1" class="rbtn">r &lt; 0</button>
+        <button data-t="1" class="tbtn active">θ &gt; 0 (antihorario)</button>
+        <button data-t="-1" class="tbtn">θ &lt; 0 (horario)</button>
+      </div>
+      <canvas id="signCanvas" width="420" height="260"></canvas>
+      <p class="note" id="signNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section id="conversion"><div class="wrap">
+  <div class="tag"><b>90°</b> Sección 2</div>
+  <h2>El puente de conversión: cartesiano ⟷ polar</h2>
+  <p>Del triángulo rectángulo formado por x, y y r se deducen las fórmulas de conversión:</p>
+  <div class="grid2">
+    <div class="formula">x = r cos θ &nbsp;&nbsp; y = r sin θ</div>
+    <div class="formula">r² = x² + y² &nbsp;&nbsp; tan θ = y / x</div>
+  </div>
+  <div class="grid2" style="margin-top:10px">
+    <div class="card">
+      <h3>Convertidor paso a paso</h3>
+      <div class="btnrow">
+        <button id="modeCP" class="modebtn active">Cartesiano → Polar</button>
+        <button id="modePC" class="modebtn">Polar → Cartesiano</button>
+      </div>
+      <div id="cpInputs">
+        <label>x <input type="number" id="inX" value="3" step="0.1"></label>
+        <label>y <input type="number" id="inY" value="4" step="0.1"></label>
+      </div>
+      <div id="pcInputs" style="display:none">
+        <label>r <input type="number" id="inR" value="5" step="0.1"></label>
+        <label>θ (grados) <input type="number" id="inTh" value="53.13" step="0.1"></label>
+      </div>
+      <div id="steps" class="note"></div>
+      <div class="result" id="convResult"></div>
+    </div>
+    <canvas id="convCanvas" width="420" height="340"></canvas>
+  </div>
+  <div class="card" style="margin-top:20px">
+    <h3>Ejemplo resuelto: convertir una ecuación</h3>
+    <p><b style="color:#fff">Cartesiana → Polar:</b> x² + y² = 4 &nbsp;⟶&nbsp; sustituyendo r² = x²+y² se obtiene <i>r² = 4</i>, es decir <i>r = 2</i> (una circunferencia de radio 2).</p>
+    <p><b style="color:#fff">Polar → Cartesiana:</b> r = 2 cos θ &nbsp;⟶&nbsp; multiplicando ambos lados por r: r² = 2 r cos θ, y sustituyendo r²=x²+y², r cos θ = x, queda x²+y² = 2x, que al completar el cuadrado es <i>(x − 1)² + y² = 1</i>: una circunferencia de radio 1 centrada en (1, 0).</p>
+  </div>
+</div></section>
+
+<section id="laboratorio"><div class="wrap">
+  <div class="tag"><b>180°</b> Sección 3</div>
+  <h2>Laboratorio interactivo de curvas polares</h2>
+  <p>Elige una familia y mueve los controles: la curva se redibuja de inmediato para que veas el efecto de cada parámetro.</p>
+  <div class="grid2">
+    <div class="card">
+      <select id="family">
+        <option value="rose">Rosas polares · r = a·cos(nθ)</option>
+        <option value="limacon">Cardioides y caracoles · r = a + b·cos θ</option>
+        <option value="spiral">Espiral de Arquímedes · r = a·θ</option>
+        <option value="lemniscate">Lemniscata · r² = a²·cos(2θ)</option>
+      </select>
+      <div id="ctrlA">
+        <label><span>a</span><b id="aVal">2</b></label>
+        <input type="range" id="a" min="0.2" max="4" step="0.1" value="2">
+      </div>
+      <div id="ctrlB">
+        <label><span>b</span><b id="bVal">1</b></label>
+        <input type="range" id="b" min="0" max="4" step="0.1" value="1">
+      </div>
+      <div id="ctrlN">
+        <label><span>n (pétalos)</span><b id="nVal">3</b></label>
+        <input type="range" id="n" min="1" max="8" step="1" value="3">
+      </div>
+      <p class="note" id="labExplain"></p>
+    </div>
+    <canvas id="labCanvas" width="440" height="440"></canvas>
+  </div>
+</div></section>
+
+<section id="limites"><div class="wrap">
+  <div class="tag"><b>270°</b> Sección 4</div>
+  <h2>Aplicación: límites en dos variables</h2>
+  <p>Cerca del origen, sustituir x = r cos θ, y = r sin θ convierte un límite en (x,y)→(0,0) en un límite cuando r → 0⁺. Si la expresión queda como (algo acotado en θ) · rᵏ con k &gt; 0, el límite existe y vale 0, sin importar por dónde nos acerquemos. Si en cambio la sustitución deja una expresión que depende de θ y no se cancela, el límite <b style="color:#fff">no existe</b>.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>Ejemplo 1 — el límite existe</h3>
+      <div class="formula">lim (x,y)→(0,0) &nbsp; x²y / (x² + y²)</div>
+      <p>Sustituyendo: numerador = r³cos²θ sinθ, denominador = r². La expresión se reduce a <i>r·cos²θ·sinθ</i>. Como |cos²θ sinθ| ≤ 1, al hacer r→0⁺ el producto tiende a 0 para <b style="color:#fff">cualquier</b> θ. Límite = 0.</p>
+    </div>
+    <div class="card">
+      <h3>Ejemplo 2 — el límite no existe</h3>
+      <div class="formula">lim (x,y)→(0,0) &nbsp; xy / (x² + y²)</div>
+      <p>Sustituyendo: numerador = r²cosθ sinθ, denominador = r². La r se cancela y queda <i>cosθ·sinθ</i>: el "límite" depende de la dirección θ de acercamiento, así que no existe.</p>
+      <label><span>Elige θ y observa el valor límite direccional</span><b id="thLimVal">45°</b></label>
+      <input type="range" id="thLim" min="0" max="360" step="1" value="45">
+      <table class="tbl"><thead><tr><th>r</th><th>x²y/(x²+y²)</th><th>xy/(x²+y²)</th></tr></thead><tbody id="limTable"></tbody></table>
+    </div>
+  </div>
+</div></section>
+
+<section id="referencias"><div class="wrap">
+  <div class="tag"><b>360°</b> Referencias</div>
+  <h2>Fuentes consultadas</h2>
+  <p>Los contenidos de este portal fueron redactados con base en las siguientes referencias académicas estándar de cálculo:</p>
+  <div class="card">
+    <ul style="color:var(--muted);line-height:2;padding-left:20px;margin:0">
+      <li>Paul Dawkins, <i>Polar Coordinates</i>, Paul's Online Math Notes, Lamar University — <a href="https://tutorial.math.lamar.edu/Classes/CalcII/PolarCoordinates.aspx" style="color:var(--teal)" target="_blank" rel="noopener">tutorial.math.lamar.edu/Classes/CalcII/PolarCoordinates.aspx</a></li>
+      <li>Paul Dawkins, <i>Limits</i> (funciones de varias variables), Paul's Online Math Notes, Lamar University — <a href="https://tutorial.math.lamar.edu/Classes/CalcIII/Limits.aspx" style="color:var(--teal)" target="_blank" rel="noopener">tutorial.math.lamar.edu/Classes/CalcIII/Limits.aspx</a></li>
+      <li>Eric W. Weisstein, <i>Rose Curve</i>, Wolfram MathWorld — <a href="https://mathworld.wolfram.com/RoseCurve.html" style="color:var(--teal)" target="_blank" rel="noopener">mathworld.wolfram.com/RoseCurve.html</a></li>
+      <li>Eric W. Weisstein, <i>Lemniscate</i>, Wolfram MathWorld — <a href="https://mathworld.wolfram.com/Lemniscate.html" style="color:var(--teal)" target="_blank" rel="noopener">mathworld.wolfram.com/Lemniscate.html</a></li>
+      <li><i>Limaçon</i>, Wikipedia — <a href="https://en.wikipedia.org/wiki/Lima%C3%A7on" style="color:var(--teal)" target="_blank" rel="noopener">en.wikipedia.org/wiki/Limaçon</a></li>
+      <li><i>Archimedean spiral</i>, Wikipedia — <a href="https://en.wikipedia.org/wiki/Archimedean_spiral" style="color:var(--teal)" target="_blank" rel="noopener">en.wikipedia.org/wiki/Archimedean_spiral</a></li>
+    </ul>
+    <p class="note">Los ejercicios resueltos (conversión de ecuaciones y límites) fueron desarrollados originalmente para este portal siguiendo el método estándar descrito en las fuentes anteriores.</p>
+  </div>
+</div></section>
+
+<footer>Portal de Coordenadas Polares y Curvas en R² · Proyecto Digital Interactivo</footer>
+
+<script>
+// ---------- shared drawing helpers ----------
+function fit(cv){const r=cv.getBoundingClientRect();cv.width=r.width*2;cv.height=(cv.height/cv.clientWidth||1)*r.width*2;}
+function grid(ctx,W,H,scale,maxR){
+  const cx=W/2, cy=H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle="#2A3B57"; ctx.fillStyle="#93A5BC"; ctx.font="20px Inter"; ctx.lineWidth=1.2;
+  for(let rr=1; rr<=maxR; rr++){ctx.beginPath();ctx.arc(cx,cy,rr*scale,0,7);ctx.stroke();}
+  for(let a=0;a<360;a+=30){const rad=a*Math.PI/180;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(rad)*maxR*scale,cy-Math.sin(rad)*maxR*scale);ctx.stroke();}
+  ctx.strokeStyle="#5EC9C0"; ctx.lineWidth=2.4; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+maxR*scale,cy); ctx.stroke();
+  return {cx,cy};
+}
+function toXY(cx,cy,scale,r,thRad){return [cx+r*Math.cos(thRad)*scale, cy-r*Math.sin(thRad)*scale];}
+
+// ---------- hero ----------
+const hc=document.getElementById('heroCanvas'); const hctx=hc.getContext('2d');
+let heroR=2, heroT=40*Math.PI/180;
+function drawHero(){
+  const W=hc.width,H=hc.height,scale=Math.min(W,H)/2/3.2;
+  const {cx,cy}=grid(hctx,W,H,scale,3);
+  const [px,py]=toXY(cx,cy,scale,heroR,heroT);
+  hctx.strokeStyle="#E8A33D"; hctx.lineWidth=2; hctx.beginPath(); hctx.moveTo(cx,cy); hctx.lineTo(px,py); hctx.stroke();
+  hctx.fillStyle="#5EC9C0"; hctx.beginPath(); hctx.arc(px,py,9,0,7); hctx.fill();
+  document.getElementById('ro').textContent=heroR.toFixed(2);
+  document.getElementById('to').textContent=(heroT*180/Math.PI).toFixed(1)+"°";
+  document.getElementById('xo').textContent=(heroR*Math.cos(heroT)).toFixed(2);
+  document.getElementById('yo').textContent=(heroR*Math.sin(heroT)).toFixed(2);
+}
+function heroDrag(e){
+  const rect=hc.getBoundingClientRect();
+  const px=(e.clientX-rect.left)/rect.width*hc.width, py=(e.clientY-rect.top)/rect.height*hc.height;
+  const cx=hc.width/2, cy=hc.height/2, scale=Math.min(hc.width,hc.height)/2/3.2;
+  const dx=(px-cx)/scale, dy=-(py-cy)/scale;
+  heroR=Math.hypot(dx,dy); heroT=Math.atan2(dy,dx); if(heroT<0)heroT+=2*Math.PI;
+  drawHero();
+}
+hc.addEventListener('pointerdown',e=>{hc.setPointerCapture(e.pointerId);heroDrag(e);});
+hc.addEventListener('pointermove',e=>{if(e.buttons)heroDrag(e);});
+drawHero();
+
+// ---------- sign demo ----------
+const sc=document.getElementById('signCanvas'), sctx=sc.getContext('2d');
+let rsign=1, tsign=1;
+function drawSign(){
+  const W=sc.width,H=sc.height,scale=Math.min(W,H)/2/2.4;
+  const {cx,cy}=grid(sctx,W,H,scale,2);
+  const r=2*rsign, th=(45*Math.PI/180)*tsign;
+  const [px,py]=toXY(cx,cy,scale,r,th);
+  sctx.strokeStyle= rsign>0?"#5EC9C0":"#D9707A"; sctx.lineWidth=2.5;
+  sctx.beginPath();sctx.moveTo(cx,cy);sctx.lineTo(px,py);sctx.stroke();
+  sctx.fillStyle="#E8A33D"; sctx.beginPath(); sctx.arc(px,py,8,0,7); sctx.fill();
+  document.getElementById('signNote').textContent =
+    (rsign<0 ? "r negativo: el punto se refleja al lado opuesto del polo (equivale a sumar 180° al ángulo). " : "") +
+    (tsign<0 ? "θ negativo: el giro se mide en sentido horario." : "θ positivo: el giro se mide en sentido antihorario.");
+}
+document.querySelectorAll('.rbtn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.rbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');rsign=+b.dataset.r;drawSign();});
+document.querySelectorAll('.tbtn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');tsign=+b.dataset.t;drawSign();});
+drawSign();
+
+// ---------- converter ----------
+const cc=document.getElementById('convCanvas'), cctx=cc.getContext('2d');
+const modeCP=document.getElementById('modeCP'), modePC=document.getElementById('modePC');
+let convMode='cp';
+modeCP.onclick=()=>{convMode='cp';modeCP.classList.add('active');modePC.classList.remove('active');document.getElementById('cpInputs').style.display='block';document.getElementById('pcInputs').style.display='none';updateConv();};
+modePC.onclick=()=>{convMode='pc';modePC.classList.add('active');modeCP.classList.remove('active');document.getElementById('pcInputs').style.display='block';document.getElementById('cpInputs').style.display='none';updateConv();};
+function updateConv(){
+  let x,y,r,thDeg,thRad;
+  if(convMode==='cp'){
+    x=+document.getElementById('inX').value; y=+document.getElementById('inY').value;
+    r=Math.hypot(x,y); thRad=Math.atan2(y,x); thDeg=thRad*180/Math.PI;
+    document.getElementById('steps').innerHTML = `r = √(${x}² + ${y}²) = ${r.toFixed(3)}<br>θ = atan2(${y}, ${x}) = ${thDeg.toFixed(2)}°`;
+    document.getElementById('convResult').textContent = `(r, θ) = (${r.toFixed(3)}, ${thDeg.toFixed(2)}°)`;
+  } else {
+    r=+document.getElementById('inR').value; thDeg=+document.getElementById('inTh').value; thRad=thDeg*Math.PI/180;
+    x=r*Math.cos(thRad); y=r*Math.sin(thRad);
+    document.getElementById('steps').innerHTML = `x = ${r}·cos(${thDeg}°) = ${x.toFixed(3)}<br>y = ${r}·sin(${thDeg}°) = ${y.toFixed(3)}`;
+    document.getElementById('convResult').textContent = `(x, y) = (${x.toFixed(3)}, ${y.toFixed(3)})`;
+  }
+  const W=cc.width,H=cc.height, maxR=Math.max(2,Math.ceil(r||1)+1), scale=Math.min(W,H)/2/(maxR+1);
+  const {cx,cy}=grid(cctx,W,H,scale,maxR);
+  const [px,py]=toXY(cx,cy,scale,r,thRad);
+  cctx.strokeStyle="#93A5BC"; cctx.setLineDash([6,4]); cctx.lineWidth=1.5;
+  cctx.beginPath();cctx.moveTo(px,cy);cctx.lineTo(px,py);cctx.lineTo(cx,py);cctx.stroke(); cctx.setLineDash([]);
+  cctx.strokeStyle="#E8A33D"; cctx.lineWidth=2.4; cctx.beginPath();cctx.moveTo(cx,cy);cctx.lineTo(px,py);cctx.stroke();
+  cctx.fillStyle="#5EC9C0"; cctx.beginPath();cctx.arc(px,py,8,0,7);cctx.fill();
+}
+['inX','inY','inR','inTh'].forEach(id=>document.getElementById(id).addEventListener('input',updateConv));
+updateConv();
+
+// ---------- lab ----------
+const lc=document.getElementById('labCanvas'), lctx=lc.getContext('2d');
+const fam=document.getElementById('family'), aI=document.getElementById('a'), bI=document.getElementById('b'), nI=document.getElementById('n');
+function syncCtrls(){
+  const f=fam.value;
+  document.getElementById('ctrlB').style.display = f==='limacon' ? 'block':'none';
+  document.getElementById('ctrlN').style.display = f==='rose' ? 'block':'none';
+}
+function drawLab(){
+  const f=fam.value, a=+aI.value, b=+bI.value, n=+nI.value;
+  document.getElementById('aVal').textContent=a.toFixed(1);
+  document.getElementById('bVal').textContent=b.toFixed(1);
+  document.getElementById('nVal').textContent=n;
+  let maxR=3, thetaMax=2*Math.PI, rf;
+  if(f==='rose'){ rf=th=>a*Math.cos(n*th); maxR=a+0.5; thetaMax=(n%2===0?2*Math.PI:Math.PI)+0.01;
+    document.getElementById('labExplain').textContent = `n=${n} produce ${n%2===0? n*2 : n} pétalos de longitud a=${a.toFixed(1)}. Si n es par, hay el doble de pétalos que si es impar.`; }
+  else if(f==='limacon'){ rf=th=>a+b*Math.cos(th); maxR=Math.abs(a)+Math.abs(b)+0.5; thetaMax=2*Math.PI+0.01;
+    const ratio=b===0?99:a/b;
+    let cls = a===0?"circunferencia": ratio<1?"caracol con rizo interior": Math.abs(ratio-1)<1e-6?"cardioide (a = b)": ratio<2?"caracol con hoyuelo":"caracol convexo";
+    document.getElementById('labExplain').textContent = `Con a=${a.toFixed(1)}, b=${b.toFixed(1)} (a/b≈${ratio.toFixed(2)}) se obtiene: ${cls}.`; }
+  else if(f==='spiral'){ rf=th=>a*th/(2*Math.PI); maxR=a*2.2; thetaMax=4*Math.PI+0.01;
+    document.getElementById('labExplain').textContent = `El radio crece proporcionalmente al ángulo (r=a·θ). A mayor a, más separadas quedan las vueltas de la espiral.`; }
+  else { rf=th=>{const v=a*a*Math.cos(2*th); return v>=0?Math.sqrt(v):null;}; maxR=a+0.5; thetaMax=2*Math.PI+0.01;
+    document.getElementById('labExplain').textContent = `r² = a²cos(2θ) solo tiene solución real donde cos(2θ)≥0: por eso la lemniscata forma dos lóbulos, uno por semiplano.`; }
+  const W=lc.width,H=lc.height, scale=Math.min(W,H)/2/(maxR+0.6);
+  const {cx,cy}=grid(lctx,W,H,scale,Math.ceil(maxR));
+  lctx.strokeStyle="#E8A33D"; lctx.lineWidth=2.6; lctx.beginPath(); let started=false;
+  for(let th=0; th<=thetaMax; th+=0.01){
+    const r=rf(th); if(r===null||isNaN(r)){started=false; continue;}
+    const [x,y]=toXY(cx,cy,scale,r,th);
+    if(!started){lctx.moveTo(x,y);started=true;} else lctx.lineTo(x,y);
+  }
+  lctx.stroke();
+  if(f==='lemniscate'){ lctx.beginPath(); started=false;
+    for(let th=0; th<=thetaMax; th+=0.01){ const r=rf(th); if(r===null||isNaN(r)){started=false;continue;} const [x,y]=toXY(cx,cy,scale,-r,th); if(!started){lctx.moveTo(x,y);started=true;} else lctx.lineTo(x,y); }
+    lctx.stroke();
+  }
+}
+[fam,aI,bI,nI].forEach(el=>el.addEventListener('input',()=>{syncCtrls();drawLab();}));
+syncCtrls(); drawLab();
+
+// ---------- limits ----------
+const thLim=document.getElementById('thLim');
+function updateLimTable(){
+  const thDeg=+thLim.value; document.getElementById('thLimVal').textContent=thDeg+"°"; const th=thDeg*Math.PI/180;
+  let rows=''; [1,0.1,0.01,0.001,0.0001].forEach(r=>{
+    const x=r*Math.cos(th), y=r*Math.sin(th);
+    const f1=(x*x*y)/(x*x+y*y), f2=(x*y)/(x*x+y*y);
+    rows+=`<tr><td>${r}</td><td>${f1.toFixed(5)}</td><td>${f2.toFixed(5)}</td></tr>`;
+  });
+  document.getElementById('limTable').innerHTML=rows;
+}
+thLim.addEventListener('input',updateLimTable); updateLimTable();
+
+// nav active state
+const secs=[...document.querySelectorAll('section')]; const links=[...document.querySelectorAll('nav a')];
+const obs=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ links.forEach(l=>l.classList.toggle('active', l.getAttribute('href')==='#'+e.target.id)); } }),{rootMargin:'-40% 0px -55% 0px'});
+secs.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>
